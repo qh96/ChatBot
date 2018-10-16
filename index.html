@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>ChatBot Assignment 1 by Hao.Q & Yucheng.Q - Cloud Computing Fall 2018</title>
+	<script type="text/javascript" src="lib/axios/dist/axios.standalone.js"></script>
+	<script type="text/javascript" src="lib/CryptoJS/rollups/hmac-sha256.js"></script>
+	<script type="text/javascript" src="lib/CryptoJS/rollups/sha256.js"></script>
+	<script type="text/javascript" src="lib/CryptoJS/components/hmac.js"></script>
+	<script type="text/javascript" src="lib/CryptoJS/components/enc-base64.js"></script>
+	<script type="text/javascript" src="lib/url-template/url-template.js"></script>
+	<script type="text/javascript" src="lib/apiGatewayCore/sigV4Client.js"></script>
+	<script type="text/javascript" src="lib/apiGatewayCore/apiGatewayClient.js"></script>
+	<script type="text/javascript" src="lib/apiGatewayCore/simpleHttpClient.js"></script>
+	<script type="text/javascript" src="lib/apiGatewayCore/utils.js"></script>
+	<script type="text/javascript" src="apigClient.js"></script>
+	<style language="text/css">
+
+		.div1{
+        text-align: center
+		}
+
+		input#wisdom {
+			padding: 4px;
+			font-size: 1em;
+			width: 400px
+		}
+
+		input::placeholder {
+			color: #ccc;
+			font-style: italic;
+		}
+
+		p.userRequest {
+			margin: 4px;
+			padding: 4px 10px 4px 10px;
+			border-radius: 4px;
+			min-width: 50%;
+			max-width: 85%;
+			float: left;
+			background-color: #7d7;
+		}
+
+		p.requestTime {
+			margin: 0px;
+			padding: 4px 10px 4px 10px;
+			border-radius: 4px;
+			min-width: 50%;
+			max-width: 85%;
+			font-size: 0.5em;
+			float: left;
+		}
+
+		p.Response {
+			margin: 4px;
+			padding: 4px 10px 4px 10px;
+			border-radius: 4px;
+			text-align: right;
+			min-width: 50%;
+			max-width: 85%;
+			float: right;
+			background-color: #bbf;
+			font-style: italic;
+		}
+
+		p.responseTime {
+			margin: 0px;
+			padding: 4px 10px 4px 10px;
+			border-radius: 4px;
+			text-align: right;
+			min-width: 50%;
+			max-width: 85%;
+			font-size: 0.5em;
+			float: right;
+		}
+		p.Error {
+			margin: 4px;
+			padding: 4px 10px 4px 10px;
+			border-radius: 4px;
+			text-align: right;
+			min-width: 50%;
+			max-width: 85%;
+			float: right;
+			background-color: #f77;
+		}
+	</style>
+</head>
+
+<body>
+	<h1 style="text-align:  center">Cloud Computing Assignment 1</h1>
+	<h1 style="text-align:  center">ChatBot</h1>
+
+	
+	<div id="conversation" style="margin:0 auto; width: 400px; height: 400px; border: 1px solid #ccc; background-color: #eee; padding: 4px; overflow: scroll"></div>
+	<div class="div1">
+	<form id="chatform" style="margin-top: 10px" onsubmit="return pushChat();">
+		<input type="text" id="wisdom" size="80" value="" placeholder="Please say Hello">
+	</form>
+	</div>	
+	<script type="text/javascript">
+		// set the focus to the input box
+		document.getElementById("wisdom").focus();
+		// create a new client with access to API_Key
+		var apigClient = apigClientFactory.newClient({
+		  apiKey: 'ynYAjkHSMpaKHV4b5R5KL1hf0Y177q65aeyTo1JC'
+		});
+
+		function pushChat() {
+			// if there is text to be sent...
+			var wisdomText = document.getElementById('wisdom');
+			if (wisdomText && wisdomText.value && wisdomText.value.trim().length > 0) {
+				// disable input to show we're sending it
+				var wisdom = wisdomText.value.trim();
+				wisdomText.placeholder = '';
+				wisdomText.value = '...';
+				wisdomText.locked = true;
+				// get input timestamp
+				var myDate = new Date();
+				var timestamp = myDate.getHours() + ":" + myDate.getMinutes() + ":" + myDate.getSeconds();
+				console.log(timestamp);
+				// print user input on UI.
+				showRequest(wisdom, timestamp);
+
+				// construct message json section
+				var message = [
+				{	"type": "n/a", 
+					"unstructured":
+						{"id": "n/a", 
+						 "text": wisdom, 
+						 "timestamp": "n/a"}}
+				];
+				// construct request body
+				var body = {
+					messages: message
+				};
+				// post request and receive response
+				apigClient.chatbotPost(null, body).then(function(result){
+        			//a success callback
+        			console.log(result);
+        			var obj = JSON.parse(result.data);
+        			var responseResult = JSON.stringify(obj.messages[0].unstructured.text);
+        			var responseTime = JSON.stringify(obj.messages[0].unstructured.timestamp);
+        			console.log(responseTime.replace(/['"]+/g, ''));
+        			showResponse(responseResult.replace(/['"]+/g, ''), responseTime.replace(/['"]+/g, ''));
+
+    			}).catch( function(result){
+        			//an error callback
+        			var responseResult = JSON.stringify(result);
+        			showError(responseResult);
+        			console.log(result);
+    			});
+    			wisdomText.value = '';
+        		wisdomText.locked = false;
+			}
+			// always cancel form submission
+			return false;
+		}
+
+		function showRequest(daText1, daText2) {
+			var conversationDiv = document.getElementById('conversation');
+			var requestPara = document.createElement("P");
+			var timePara = document.createElement("P");
+			requestPara.className = 'userRequest';
+			timePara.className = 'requestTime';
+			requestPara.appendChild(document.createTextNode(daText1));
+			timePara.appendChild(document.createTextNode(daText2));
+			conversationDiv.appendChild(requestPara);
+			conversationDiv.appendChild(timePara);
+			conversationDiv.scrollTop = conversationDiv.scrollHeight;
+		}
+
+		function showError(daText) {
+			var conversationDiv = document.getElementById('conversation');
+			var errorPara = document.createElement("P");
+			errorPara.className = 'Error';
+			errorPara.appendChild(document.createTextNode(daText));
+			conversationDiv.appendChild(errorPara);
+			conversationDiv.scrollTop = conversationDiv.scrollHeight;
+		}
+
+		function showResponse(daText1, daText2) {
+			var conversationDiv = document.getElementById('conversation');
+			var responsePara = document.createElement("P");
+			var timePara = document.createElement("P");
+			responsePara.className = 'Response';
+			timePara.className = 'responseTime';
+			responsePara.appendChild(document.createTextNode(daText1));
+			timePara.appendChild(document.createTextNode(daText2));
+			conversationDiv.appendChild(responsePara);
+			conversationDiv.appendChild(timePara);
+			conversationDiv.scrollTop = conversationDiv.scrollHeight;
+		}
+	</script>
+</body>
+
+</html>
