@@ -14,6 +14,7 @@
 	<script type="text/javascript" src="lib/apiGatewayCore/simpleHttpClient.js"></script>
 	<script type="text/javascript" src="lib/apiGatewayCore/utils.js"></script>
 	<script type="text/javascript" src="apigClient.js"></script>
+	<script type="text/javascript" src="amazon-cognito-auth-js-master/dist/amazon-cognito-auth.min.js"></script>
 	<style language="text/css">
 
 		.div1{
@@ -87,8 +88,9 @@
 </head>
 
 <body>
-	<h1 style="text-align:  center">Cloud Computing Assignment 1</h1>
-	<h1 style="text-align:  center">ChatBot</h1>
+	<h1 style="text-align:  center">Cloud Computing Assignment 2</h1>
+	<h1 style="text-align:  center">Restaurant Recommandation Concierge ChatBot</h1>	
+	<p style="text-align:  center">with Cognito + Lex + Google API + SQS + SNS</p>
 
 	
 	<div id="conversation" style="margin:0 auto; width: 400px; height: 400px; border: 1px solid #ccc; background-color: #eee; padding: 4px; overflow: scroll"></div>
@@ -100,12 +102,72 @@
 	<script type="text/javascript">
 		// set the focus to the input box
 		document.getElementById("wisdom").focus();
+
+		var currentAccessKey = '';
+        var currentSecretKey = '';
+        var currentSessionToken = '';
 		// create a new client with access to API_Key
-		var apigClient = apigClientFactory.newClient({
-		  apiKey: 'ynYAjkHSMpaKHV4b5R5KL1hf0Y177q65aeyTo1JC'
-		});
+		var CognitoAuth = AmazonCognitoIdentity.CognitoAuth;
+  // initialize authData
+		var authData = {
+		ClientId : '16c786r333b8ldklrfi412pbnd', 
+		AppWebDomain : 'https://chatbot123.auth.us-east-1.amazoncognito.com',
+		TokenScopesArray : ['phone', 'email', 'profile','openid', 'aws.cognito.signin.user.admin'], 
+		RedirectUriSignIn : 'https://s3.amazonaws.com/s3chatbox/index.html',
+		RedirectUriSignOut : '<TODO: add redirect url when signed out>',
+		IdentityProvider : 'https://cognito-idp.us-east-1.amazonaws.com/us-east-1_nhnSRnHY8', 
+		UserPoolId : 'us-east-1_nhnSRnHY8', 
+		};
+
+		var auth = new AmazonCognitoIdentity.CognitoAuth(authData);
+		auth.userhandler = {
+		onSuccess: function(result) {
+		alert("Sign in success, welcome!");
+		var accessToken = result.getAccessToken().getJwtToken();
+		     //POTENTIAL: region needs to be set if not already set previously elsewhere.
+		     AWS.config.region = 'us-east-1';
+		     // get potential credentials from identity provider - user pool using Idtoken 
+		     AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+		         IdentityPoolId : 'us-east-1:a3218f0b-657c-4c13-be36-7fd9c62c80d2', // your identity pool id here
+		         Logins : {
+		             // change the key below according to the specific region your user pool is in.
+		             'cognito-idp.us-east-1.amazonaws.com/us-east-1_nhnSRnHY8' : result.getIdToken().getJwtToken()
+		         }
+		  });
+		  //refreshes credentials using AWS.CognitoIdentity.getCredentialsForIdentity()
+		  AWS.config.credentials.refresh((error) => {
+		         if (error) {
+		             console.error(error);
+		         } else {
+		             // instantiate aws sdk service objects now that the credentials have been updated.
+		             // assign key value and token value to variables
+		             currentAccessKey = AWS.config.credentials.accessKeyId;
+		    		 currentSecretKey = AWS.config.credentials.secretAccessKey;
+	    			 currentSessionToken = AWS.config.credentials.sessionToken;
+	    			 console.log(AWS.config.credentials);
+	    			 console.log('AccessKey\n' + currentAccessKey);
+	    			 console.log('SecretKey\n' + currentSecretKey);
+	    			 console.log('SessionToken\n' + currentSessionToken);
+		             console.log('Successfully logged!');
+		         }
+		     });
+		},
+		onFailure: function(err) {
+		alert("Error!");
+		}
+		};
+		// get the current window url and parse its idToken
+		var curUrl = window.location.href;
+		// parse its token to sign in using parseCognitoWebResponse()
+		auth.parseCognitoWebResponse(curUrl);
 
 		function pushChat() {
+			var apigClient = apigClientFactory.newClient({
+		      accessKey: currentAccessKey,
+		      secretKey: currentSecretKey,
+		      sessionToken: currentSessionToken,
+		      region: 'us-east-1'// never forget to assign region value (us-east-1 on default if unassigned)
+		     });
 			// if there is text to be sent...
 			var wisdomText = document.getElementById('wisdom');
 			if (wisdomText && wisdomText.value && wisdomText.value.trim().length > 0) {
@@ -135,22 +197,22 @@
 				};
 				// post request and receive response
 				apigClient.chatbotPost(null, body).then(function(result){
-        			//a success callback
-        			console.log(result);
-        			var obj = JSON.parse(result.data);
-        			var responseResult = JSON.stringify(obj.messages[0].unstructured.text);
-        			var responseTime = JSON.stringify(obj.messages[0].unstructured.timestamp);
-        			console.log(responseTime.replace(/['"]+/g, ''));
-        			showResponse(responseResult.replace(/['"]+/g, ''), responseTime.replace(/['"]+/g, ''));
+					//a success callback
+					console.log(result);
+					var obj = result.data;
+					var responseResult = JSON.stringify(obj.messages[0].unstructured.text);
+					var responseTime = JSON.stringify(obj.messages[0].unstructured.timestamp);
+					console.log(responseTime.replace(/['"]+/g, ''));
+					showResponse(responseResult.replace(/['"]+/g, ''), responseTime.replace(/['"]+/g, ''));
 
-    			}).catch( function(result){
-        			//an error callback
-        			var responseResult = JSON.stringify(result);
-        			showError(responseResult);
-        			console.log(result);
-    			});
-    			wisdomText.value = '';
-        		wisdomText.locked = false;
+				}).catch( function(result){
+					//an error callback
+					var responseResult = JSON.stringify(result);
+					showError(responseResult);
+					console.log(result);
+				});
+				wisdomText.value = '';
+				wisdomText.locked = false;
 			}
 			// always cancel form submission
 			return false;

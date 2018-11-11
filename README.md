@@ -1,8 +1,12 @@
 # Chatbot
 
-Abstract: In this assignment, we created a simple chat bot webpage. With apigClient SDK, the front-end is hosted on an AWS S3 bucket in JavaScript and HTML (the link is given below). It pushes requests and receives responses with the back-end in JSON. As for the back-end, we imported original Swagger API into AWS API Gateway, set up CORS, generated APIs with API Keys and API SDK for front-end use. We also constructed Lambda functions in the back-end to deal with front-end HTTP POST requests. A response would be given to the front-end in which it is extracted to show a message on the website. The whole project is uploaded to Github.
-
-![pic.png](assets/pic.png)
+Introduction:
+In this assignment, we created a concierge chatbot which enables users to sign up, sign in and chat with a robot to get restaurant suggestions. In summary, we: 
+1) implemented AWS Cognito (User Pool & Identity Pool) for user authorization, management and credentials assignment.
+2) implemented Amazon Lex (console) to chat with users, also implemented Amazon Lex (Lambda LF1 code hook) for initialization and validation. 
+3) implemented SQS with LF2 lambda function, utilized Google Place API to make suggestions on restaurants which were then stored it in DynamoDB, implemented functions to send text messages using SMS Message with SNS, set up CloudWatch event trigger to invoke functions to be automatically executed.
+4) Integration of different components see:
+<Front-end> --- <API Gateway> --- <Lambda> --- <Lex>
 
 
 
