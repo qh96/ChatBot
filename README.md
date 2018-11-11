@@ -7,6 +7,7 @@ In this assignment, we created a concierge chatbot which enables users to sign u
 3) implemented SQS with LF2 lambda function, utilized Google Place API to make suggestions on restaurants which were then stored it in DynamoDB, implemented functions to send text messages using SMS Message with SNS, set up CloudWatch event trigger to invoke functions to be automatically executed.
 4) Integration of different components see:
 <Front-end> --- <API Gateway> --- <Lambda> --- <Lex>
-
+  
+[Watch Demo](https://chatbot123.auth.us-east-1.amazoncognito.com/login?response_type=token&client_id=16c786r333b8ldklrfi412pbnd&redirect_uri=https://s3.amazonaws.com/s3chatbox/index.html)
 
 
